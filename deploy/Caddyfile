@@ -1,0 +1,7 @@
+# Set CAMERA_DOMAIN to a DNS hostname pointing to this host.
+# Caddy obtains/renews a publicly trusted TLS certificate automatically.
+{$CAMERA_DOMAIN} {
+    reverse_proxy 127.0.0.1:5000 {
+        flush_interval -1
+    }
+}

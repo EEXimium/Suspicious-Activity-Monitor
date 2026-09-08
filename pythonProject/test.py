@@ -1,26 +1,36 @@
-from ultralytics import YOLO
-import cv2
+﻿"""Local webcam preview. Press q to quit; no Firebase connection is needed."""
+import argparse
+from monitor.adapters import OpenCVCamera, YOLODetector
+from monitor.config import MonitorConfig
 
-# Load trained model
-model = YOLO('runs/detect/train28/weights/best.pt')
 
-# Open camera
-cap = cv2.VideoCapture(0)  # 0 for webcam
+class CameraPreview:
+    def __init__(self, camera, detector):
+        self.camera = camera
+        self.detector = detector
 
-while cap.isOpened():
-    ret, frame = cap.read()
-    if not ret:
-        break
+    def run(self):
+        import cv2
+        try:
+            while True:
+                frame = self.camera.read()
+                _, annotated = self.detector.detect(frame)
+                cv2.imshow("YOLOv11 Live Detection", annotated)
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    break
+        finally:
+            self.camera.close()
+            cv2.destroyAllWindows()
 
-    # Run inference
-    results = model(frame)
 
-    # Display results
-    annotated_frame = results[0].plot()
-    cv2.imshow('YOLOv8 Live Detection', annotated_frame)
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--camera", type=int, default=0)
+    parser.add_argument("--model", default=str(MonitorConfig.model_path))
+    args = parser.parse_args()
+    detector = YOLODetector(args.model)
+    CameraPreview(OpenCVCamera(args.camera), detector).run()
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
 
-cap.release()
-cv2.destroyAllWindows()
+if __name__ == "__main__":
+    main()

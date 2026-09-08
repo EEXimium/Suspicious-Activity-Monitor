@@ -1,0 +1,44 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "cameras": {
+      "$camera": {
+        ".read": "auth != null && root.child('cameraMembers').child($camera).child(auth.uid).val() == true"
+      }
+    },
+    "cameraLogs": {
+      "$camera": {
+        ".read": "auth != null && root.child('cameraMembers').child($camera).child(auth.uid).val() == true && root.child('users').child(auth.uid).child('linked_cameras').child($camera).exists()",
+        "$type": {
+          ".indexOn": ["timestamp"],
+          "$log": {
+            ".write": "auth != null && !newData.exists() && root.child('cameraMembers').child($camera).child(auth.uid).val() == true && root.child('users').child(auth.uid).child('linked_cameras').child($camera).exists()"
+          }
+        }
+      }
+    },
+    "users": {
+      "$uid": {
+        "linked_cameras": {
+          ".read": "auth != null && auth.uid == $uid",
+          "$camera": {
+            ".write": "auth != null && auth.uid == $uid && (!newData.exists() || root.child('cameraMembers').child($camera).child(auth.uid).val() == true)",
+            ".validate": "newData.isString() && newData.val() == root.child('cameras').child($camera).child('url').val()"
+          }
+        }
+      }
+    },
+    "feedback": {
+      "$uid": {
+        "$entry": {
+          ".write": "auth != null && auth.uid == $uid && !data.exists() && newData.exists()",
+          ".validate": "newData.hasChildren(['feedback', 'timestamp'])",
+          "feedback": {".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 5000"},
+          "timestamp": {".validate": "newData.isNumber() && newData.val() <= now && newData.val() >= now - 300000"},
+          "$other": {".validate": false}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,40 @@
+name: Python tests
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.10', '3.11']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run hardware-independent tests
+        working-directory: pythonProject
+        run: |
+          python -m pip install -r requirements-test.txt
+          python -B -m unittest discover -s tests -v
+  database-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Test Realtime Database rules in emulator
+        working-directory: firebase
+        run: |
+          npm ci --ignore-scripts
+          npm test
